@@ -5,7 +5,9 @@ const { baseUrl } = config;
 
 const user = {
     login: async (credential) => {
-        return await supertest(baseUrl).post('/Account/v1/User').send(credential);
+        return await supertest(baseUrl)
+            .post('/Account/v1/User')
+            .send(credential);
     },
 
     async requestToken(credential) {
@@ -24,30 +26,33 @@ const user = {
         return res.body.token;
     },
 
-    async requestAuthorized(credential) {
+    async requestIsAuthorized(credential) {
         return await supertest(baseUrl)
             .post('/Account/v1/Authorized')
             .send(credential);
     },
 
-    async deleteUser(credential) {
+    async getUserIdAndToken(credential) {
         const res = await this.login(credential);
-        const userId = res.body.userID;
+        const userId = await res.body.userID;
         const token = await this.getToken(credential);
-        return await supertest(baseUrl)
-            .delete(`/Account/v1/User/${userId}`)
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ${token}`);
+        return { userId, token };
     },
 
     async getUser(credential) {
-        const res = await this.login(credential);
-        const userId = res.body.userID;
-        const token = await this.getToken(credential);
+        const user = await this.getUserIdAndToken(credential);
         return await supertest(baseUrl)
-            .get(`/Account/v1/User/${userId}`)
+            .get(`/Account/v1/User/${user.userId}`)
             .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ${token}`);
+            .set('Authorization', `Bearer ${user.token}`);
+    },
+
+    async deleteUser(credential) {
+        const user = await this.getUserIdAndToken(credential);
+        return await supertest(baseUrl)
+            .delete(`/Account/v1/User/${user.userId}`)
+            .set('Accept', 'application/json')
+            .set('Authorization', `Bearer ${user.token}`);
     },
 };
 
